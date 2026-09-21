@@ -1,6 +1,8 @@
 import json
 import logging
 
+import razorpay
+from django.conf import settings
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -17,6 +19,11 @@ from .serializers import (
 from .services import client, verify_payment_signature, verify_webhook_signature
 
 logger = logging.getLogger(__name__)
+
+NOT_CONFIGURED_RESPONSE = {
+    "success": False,
+    "message": "Payment gateway is not configured on this server yet.",
+}
 
 
 class ProductDetailAPIView(APIView):
@@ -41,6 +48,9 @@ class CreateOrderAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        if not settings.RAZORPAY_CONFIGURED:
+            return Response(NOT_CONFIGURED_RESPONSE, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
         serializer = CreateOrderSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -58,14 +68,25 @@ class CreateOrderAPIView(APIView):
 
             amount_paise = int(product.price * 100)
 
-            razorpay_order = client.order.create(
-                {
-                    "amount": amount_paise,
-                    "currency": "INR",
-                    "receipt": f"product_{product.id}",
-                    "notes": {"product_id": str(product.id)},
-                }
-            )
+            try:
+                razorpay_order = client.order.create(
+                    {
+                        "amount": amount_paise,
+                        "currency": "INR",
+                        "receipt": f"product_{product.id}",
+                        "notes": {"product_id": str(product.id)},
+                    }
+                )
+            except (
+                razorpay.errors.BadRequestError,
+                razorpay.errors.GatewayError,
+                razorpay.errors.ServerError,
+            ) as exc:
+                logger.error("Razorpay order creation failed: %s", exc)
+                return Response(
+                    {"success": False, "message": "Could not create payment order"},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
 
             payment = Payment.objects.create(
                 product=product,
@@ -125,6 +146,9 @@ class VerifyPaymentAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        if not settings.RAZORPAY_CONFIGURED:
+            return Response(NOT_CONFIGURED_RESPONSE, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
         serializer = VerifyPaymentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
@@ -168,6 +192,9 @@ class RazorpayWebhookAPIView(APIView):
     authentication_classes = []
 
     def post(self, request):
+        if not settings.RAZORPAY_WEBHOOK_CONFIGURED:
+            return Response(NOT_CONFIGURED_RESPONSE, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
         raw_body = request.body
         signature = request.headers.get("X-Razorpay-Signature", "")
 
