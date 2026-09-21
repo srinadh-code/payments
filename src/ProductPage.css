@@ -1,0 +1,89 @@
+.page-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f4f7fb;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.error-text {
+  color: #dc2626;
+}
+
+.product-card {
+  background: #fff;
+  padding: 32px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  width: 340px;
+}
+
+.product-image {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  border-radius: 14px;
+  background: #eef2f7;
+  margin-bottom: 20px;
+}
+
+.product-name {
+  font-size: 22px;
+  margin: 0 0 8px;
+  color: #1f2937;
+}
+
+.product-price {
+  font-size: 28px;
+  font-weight: 700;
+  color: #3399cc;
+  margin: 0 0 8px;
+}
+
+.product-stock {
+  font-size: 14px;
+  color: #16a34a;
+  margin: 0 0 20px;
+}
+
+.product-stock.out {
+  color: #dc2626;
+}
+
+.buy-button {
+  width: 100%;
+  background: #3399cc;
+  color: #fff;
+  border: none;
+  padding: 14px 30px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.buy-button:hover:not(:disabled) {
+  background: #2684b8;
+}
+
+.buy-button:disabled {
+  background: #a8bfcc;
+  cursor: not-allowed;
+}
+
+.status-text {
+  margin-top: 16px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.status-text.success {
+  color: #16a34a;
+}
+
+.status-text.failed {
+  color: #dc2626;
+}
